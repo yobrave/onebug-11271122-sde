@@ -1,47 +1,31 @@
-"""sde sick-day excuse porter - u-zeroxfive-the-funniest-sick-day-excuse-37423a36."""
+"""r44 sde entry packer: sick-day excuse line, cap 200, env-driven output."""
+
 import json
 import os
 from pathlib import Path
 
-CEILING_SDE = 200
-PORCH = Path(__file__).resolve().parent
+SLUG = "u-zeroxfive-the-funniest-sick-day-excuse-37423a36"
+MAX_CHARS = 200
 
 
-class Porter:
-    def __init__(self):
-        self.line = None
-        self.issue = None
-
-    def take(self):
-        self.line = (PORCH / "entry.txt").read_text(encoding="utf-8").strip()
-
-    def inspect(self):
-        if not self.line:
-            self.issue = "blank excuse"
-        elif len(self.line) > CEILING_SDE:
-            self.issue = "%d chars, ceiling %d" % (len(self.line), CEILING_SDE)
-
-    def drop(self):
-        yard = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "out")
-        yard.mkdir(parents=True, exist_ok=True)
-        target = yard / "entry.txt"
-        target.write_text(self.line + "\n", encoding="utf-8", newline="\n")
-        return target
+def pack():
+    problems = []
+    line = (Path(__file__).resolve().parent / "entry.txt").read_text(encoding="utf-8").strip()
+    if not line:
+        problems.append("blank_entry")
+    if len(line) > MAX_CHARS:
+        problems.append("entry_too_long")
+    copied_to = None
+    if not problems:
+        copied_to = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "out")
+        copied_to.mkdir(parents=True, exist_ok=True)
+        (copied_to / "entry.txt").write_text(line + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps({"problems": problems, "copied_to": str(copied_to), "size": len(line), "slug": SLUG}))
+    if problems:
+        raise SystemExit(2)
 
 
-def main():
-    p = Porter()
-    p.take()
-    p.inspect()
-    if p.issue:
-        print(json.dumps({"ok": False, "issue": p.issue}))
-        return 1
-    target = p.drop()
-    print(json.dumps({"ok": True, "chars": len(p.line), "target": str(target),
-                      "bounty": "u-zeroxfive-the-funniest-sick-day-excuse-37423a36",
-                      "kind": "sick-day excuse", "round": "1127-1122"}))
-    return 0
+pack()
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+STAMP = "r44-sde"
+print(json.dumps({"stamp": STAMP, "final": True}))
